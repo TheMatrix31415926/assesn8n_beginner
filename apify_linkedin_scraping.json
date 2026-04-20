@@ -1,0 +1,1118 @@
+{
+  "name": "apify_linkedin_scraping",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "aff42846-65dd-49c2-9366-a224be7677d9",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1XgpVl80p2Bi0zGy5FJCYuefucgDBwwBHJxNafB6EOcY",
+          "mode": "list",
+          "cachedResultName": "Company Page",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1XgpVl80p2Bi0zGy5FJCYuefucgDBwwBHJxNafB6EOcY/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Company Input",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1XgpVl80p2Bi0zGy5FJCYuefucgDBwwBHJxNafB6EOcY/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        208,
+        0
+      ],
+      "id": "d3f2bfb3-e95d-4c66-ac75-43eb40dfe3d1",
+      "name": "Get row(s) in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "p29c8vZBT44DvNDB",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1072,
+        0
+      ],
+      "id": "654473d1-0fe2-442b-bc90-11ffc8b20ddd",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "jsCode": "return items.map(item => {\n  const post = item.json;\n  const author = post.author || {};\n  const stats = post.stats || {};\n  const mediaUrl = post.media?.url \n    || post.images?.[0]?.url \n    || null;\n\n  return {\n    json: {\n      urn: post.urn || post.full_urn || '',\n      posted_at: post.posted_at?.date || post.timestamp || '',\n      text: post.text || '',\n      url: post.url || '',\n      author_name: `${author.first_name || ''} ${author.last_name || ''}`.trim(),\n      author_headline: author.headline || '',\n      profile_url: author.profile_url || '',\n      total_reactions: stats.total_reactions || 0,\n      like: stats.like || 0,\n      comments: stats.comments || 0,\n      reposts: stats.reposts || 0,\n      media_url: mediaUrl || '',\n      run_id: item.json.run_id || '',\n      record_key: item.json['Company name'] || ''\n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2368,
+        64
+      ],
+      "id": "7c421951-617a-467c-8ec2-634eb4461760",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1XgpVl80p2Bi0zGy5FJCYuefucgDBwwBHJxNafB6EOcY",
+          "mode": "list",
+          "cachedResultName": "Company Page",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1XgpVl80p2Bi0zGy5FJCYuefucgDBwwBHJxNafB6EOcY/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1460018401,
+          "mode": "list",
+          "cachedResultName": "Company Posts Output",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1XgpVl80p2Bi0zGy5FJCYuefucgDBwwBHJxNafB6EOcY/edit#gid=1460018401"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "urn": "={{ $json.urn }}",
+            "posted_at": "={{ $json.posted_at }}",
+            "text": "={{ $json.text }}",
+            "url": "={{ $json.url }}",
+            "author_name": "={{ $json.author_name }}",
+            "author_headline": "={{ $json.author_headline }}",
+            "profile_url": "={{ $json.profile_url }}",
+            "total_reactions": "={{ $json.total_reactions }}",
+            "like": "={{ $json.like }}",
+            "comments": "={{ $json.comments }}",
+            "reposts": "={{ $json.reposts }}",
+            "media_url": "={{ $json.media_url }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "urn",
+              "displayName": "urn",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "posted_at",
+              "displayName": "posted_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "text",
+              "displayName": "text",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "url",
+              "displayName": "url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "author_name",
+              "displayName": "author_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "author_headline",
+              "displayName": "author_headline",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "profile_url",
+              "displayName": "profile_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "total_reactions",
+              "displayName": "total_reactions",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "like",
+              "displayName": "like",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "comments",
+              "displayName": "comments",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "reposts",
+              "displayName": "reposts",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "media_url",
+              "displayName": "media_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        2848,
+        16
+      ],
+      "id": "7634329a-29c9-4ce8-9d35-d414b2b7b1fa",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "p29c8vZBT44DvNDB",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "bc5af9a5-61e1-41d8-a9e2-586609950001",
+              "name": "run_id",
+              "value": "={{ $now.toISO() }}",
+              "type": "string"
+            },
+            {
+              "id": "c13ffbed-da21-4e96-b331-74f5abec07db",
+              "name": "processed_at",
+              "value": "={{ $now.toISO() }}",
+              "type": "string"
+            },
+            {
+              "id": "d9944d37-ff2d-4ddd-8b52-2e830f1dc7a8",
+              "name": "retry_count",
+              "value": 0,
+              "type": "number"
+            },
+            {
+              "id": "14d1d5b5-03ea-481b-bcc3-bf1b80ccbf7b",
+              "name": "status",
+              "value": "pending",
+              "type": "string"
+            },
+            {
+              "id": "8ce74a9a-a93f-4f0d-bee4-8e7c49d27d1e",
+              "name": "error_message",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "449bcf5a-2297-45f8-af4b-65aa546f2ac1",
+              "name": "source_key",
+              "value": "={{ $json['Company name'] }}",
+              "type": "string"
+            },
+            {
+              "id": "27d329a7-2fc4-445e-b01b-a27856edb078",
+              "name": "record_key",
+              "value": "={{ $json['Company name'] }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        416,
+        0
+      ],
+      "id": "5e92c2e1-36cd-4d86-9c92-2e2bbd141bc0",
+      "name": "Init Run Fields"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "62824910-4091-400f-ac3e-5652fd0d8742",
+              "leftValue": "={{ $json.source_key }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        624,
+        0
+      ],
+      "id": "436852d3-f56d-427a-b49f-f053edaf99b1",
+      "name": "Validate Company Name"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "13e6f260-07ec-48b8-a86f-e0c80233f10e",
+              "name": "status",
+              "value": "skipped",
+              "type": "string"
+            },
+            {
+              "id": "1d959d5e-eff1-4537-95a2-e5ad43272557",
+              "name": "error_message",
+              "value": "Company name is empty",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        752,
+        240
+      ],
+      "id": "b3fc9f35-dff9-49ca-b4eb-15073b7784c1",
+      "name": "Mark as Skipped",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "dataTableId": {
+          "__rl": true,
+          "value": "pq7Ev556zYSeAwXy",
+          "mode": "list",
+          "cachedResultName": "company_log",
+          "cachedResultUrl": "/projects/rnwzEppIAYbYudDb/datatables/pq7Ev556zYSeAwXy"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "retry_count": 0,
+            "status": "=skipped",
+            "run_id": "={{ $json.run_id }}",
+            "record_key": "={{ $json.record_key }}",
+            "source_key": "={{ $json.source_key }}",
+            "processed_atprocessed_at": "={{ $now.toISO() }}",
+            "error_message": "Company name is empty"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "run_id",
+              "displayName": "run_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "record_key",
+              "displayName": "record_key",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "source_key",
+              "displayName": "source_key",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "processed_atprocessed_at",
+              "displayName": "processed_atprocessed_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "retry_count",
+              "displayName": "retry_count",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "error_message",
+              "displayName": "error_message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        976,
+        272
+      ],
+      "id": "2a5c668c-5c95-4ebd-bb3a-2261ed13fb36",
+      "name": "Log Skipped"
+    },
+    {
+      "parameters": {
+        "dataTableId": {
+          "__rl": true,
+          "value": "pq7Ev556zYSeAwXy",
+          "mode": "list",
+          "cachedResultName": "company_log",
+          "cachedResultUrl": "/projects/rnwzEppIAYbYudDb/datatables/pq7Ev556zYSeAwXy"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "retry_count": 0,
+            "run_id": "={{ $json.run_id }}",
+            "record_key": "={{ $json.record_key }}",
+            "source_key": "={{ $json.source_key }}",
+            "status": "={{ $json.status }}",
+            "processed_atprocessed_at": "={{ $json.processed_at }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "run_id",
+              "displayName": "run_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "record_key",
+              "displayName": "record_key",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "source_key",
+              "displayName": "source_key",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "processed_atprocessed_at",
+              "displayName": "processed_atprocessed_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "retry_count",
+              "displayName": "retry_count",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "error_message",
+              "displayName": "error_message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        832,
+        0
+      ],
+      "id": "f89e3d23-20b0-45c7-ac0a-5a216581da77",
+      "name": "Init Log Entry"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "pq7Ev556zYSeAwXy",
+          "mode": "list",
+          "cachedResultName": "company_log",
+          "cachedResultUrl": "/projects/rnwzEppIAYbYudDb/datatables/pq7Ev556zYSeAwXy"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "record_key",
+              "keyValue": "={{ $json.record_key }}"
+            },
+            {
+              "keyName": "status",
+              "keyValue": "success"
+            }
+          ]
+        },
+        "returnAll": true
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        1312,
+        32
+      ],
+      "id": "9e212065-ee62-4d5a-b844-f49731641ad5",
+      "name": "Check Duplicate"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "5ac0c8c8-2306-4d7e-8494-57504667f8b7",
+              "name": "status",
+              "value": "duplicate",
+              "type": "string"
+            },
+            {
+              "id": "c9ea6a1c-28f6-4c13-af58-d4e70f39b9a6",
+              "name": "error_message",
+              "value": "Already processed in previous run",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1664,
+        224
+      ],
+      "id": "a673af74-6c80-4495-bc60-4cbeea8020e2",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "94bcfc7f-ae96-403d-9c10-2e1d49440059",
+              "leftValue": "={{ $json.record_key }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1488,
+        0
+      ],
+      "id": "4a50fa33-e57b-4666-be7b-5e4027582b4a",
+      "name": "Is Duplicate?"
+    },
+    {
+      "parameters": {
+        "actorId": {
+          "__rl": true,
+          "value": "LpVuK3Zozwuipa5bp",
+          "mode": "list",
+          "cachedResultName": "LinkedIn Profile Scraper + Email ✅ No Cookies (harvestapi/linkedin-profile-scraper)",
+          "cachedResultUrl": "https://console.apify.com/actors/LpVuK3Zozwuipa5bp/input"
+        },
+        "customBody": "{\n  \"company_name\": \"={{ $json['Company name'] }}\",\n  \"page_number\": 1,\n  \"limit\": 50,\n  \"sort\": \"recent\"\n}"
+      },
+      "type": "@apify/n8n-nodes-apify.apify",
+      "typeVersion": 1,
+      "position": [
+        1728,
+        -16
+      ],
+      "id": "530107f8-fc8a-49cf-91fc-461c89d7c10e",
+      "name": "Scrape LinkedIn Posts",
+      "alwaysOutputData": true,
+      "credentials": {
+        "apifyApi": {
+          "id": "qB67GNW8iVG12JSd",
+          "name": "Apify account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "Datasets",
+        "datasetId": "={{ $json.defaultDatasetId }}",
+        "limit": 3,
+        "options": {}
+      },
+      "type": "@apify/n8n-nodes-apify.apify",
+      "typeVersion": 1,
+      "position": [
+        1952,
+        64
+      ],
+      "id": "63f7316e-e739-4b89-845b-7810d99f11aa",
+      "name": "Get Scraped Results",
+      "credentials": {
+        "apifyApi": {
+          "id": "qB67GNW8iVG12JSd",
+          "name": "Apify account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 2
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        2160,
+        64
+      ],
+      "id": "3b9dca2c-367e-441b-a1b0-177dd7f36ea8",
+      "name": "Wait",
+      "webhookId": "1590207a-4164-4585-bee3-a60a59784e44"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "a348ed02-4410-4bea-bd10-f5b5670b1636",
+              "leftValue": "={{ $json.text }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2576,
+        64
+      ],
+      "id": "498b52f6-fd26-408e-a085-f64394fc2935",
+      "name": "Quality Filter"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "0c21b329-ab47-4959-8d67-fb05623bb970",
+              "name": "status",
+              "value": "skipped",
+              "type": "string"
+            },
+            {
+              "id": "bfef61cc-d4f8-44a2-861f-24e89697f923",
+              "name": "error_message",
+              "value": "No post text found",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2784,
+        224
+      ],
+      "id": "a9c49f05-16b1-4da3-bfae-deaed9969abc",
+      "name": "Mark Bad Quality"
+    },
+    {
+      "parameters": {
+        "dataTableId": {
+          "__rl": true,
+          "value": "pq7Ev556zYSeAwXy",
+          "mode": "list",
+          "cachedResultName": "company_log",
+          "cachedResultUrl": "/projects/rnwzEppIAYbYudDb/datatables/pq7Ev556zYSeAwXy"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "run_id": "={{ $json.run_id }}",
+            "record_key": "={{ $json.record_key }}",
+            "source_key": "={{ $json.record_key }}",
+            "status": "success",
+            "processed_atprocessed_at": "={{ $now.toISO() }}",
+            "retry_count": 0
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "run_id",
+              "displayName": "run_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "record_key",
+              "displayName": "record_key",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "source_key",
+              "displayName": "source_key",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "processed_atprocessed_at",
+              "displayName": "processed_atprocessed_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "retry_count",
+              "displayName": "retry_count",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "error_message",
+              "displayName": "error_message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        3056,
+        16
+      ],
+      "id": "6650ccdb-d2ca-4ecb-9f24-0751391d96ec",
+      "name": "Insert row"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "Init Run Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Check Duplicate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Quality Filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Init Run Fields": {
+      "main": [
+        [
+          {
+            "node": "Validate Company Name",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Company Name": {
+      "main": [
+        [
+          {
+            "node": "Init Log Entry",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Mark as Skipped",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark as Skipped": {
+      "main": [
+        [
+          {
+            "node": "Log Skipped",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Init Log Entry": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Duplicate": {
+      "main": [
+        [
+          {
+            "node": "Is Duplicate?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Duplicate?": {
+      "main": [
+        [
+          {
+            "node": "Scrape LinkedIn Posts",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Scrape LinkedIn Posts": {
+      "main": [
+        [
+          {
+            "node": "Get Scraped Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Scraped Results": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Quality Filter": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Mark Bad Quality",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet": {
+      "main": [
+        [
+          {
+            "node": "Insert row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert row": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "9130524f-2ed4-4d63-8045-5813da00a3d2",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "dfa9bd419da97e8a72d6069acb67e95575c89baa71302d0781a7331301986176"
+  },
+  "id": "SbH1LmkIRYXUEg5D",
+  "tags": []
+}
