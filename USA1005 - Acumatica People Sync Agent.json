@@ -1,0 +1,769 @@
+{
+  "name": "USA1005 - Acumatica People Sync Agent",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "a9d51e02-eb2f-4b02-bffe-f344c75c175b",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1hTDMsR3Gs0N5lsApRGyBYM9xBRY5yr-b1Ju2Hu1oJdw",
+          "mode": "list",
+          "cachedResultName": "USA1005 - Acumatica People Sync Agent",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1hTDMsR3Gs0N5lsApRGyBYM9xBRY5yr-b1Ju2Hu1oJdw/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Contact Source",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1hTDMsR3Gs0N5lsApRGyBYM9xBRY5yr-b1Ju2Hu1oJdw/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        208,
+        0
+      ],
+      "id": "b132ca87-3ba6-4523-84c1-c7ef50a35269",
+      "name": "Get row(s) in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "p29c8vZBT44DvNDB",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "98612922-236a-438b-adda-8f1e2a4a7523",
+              "name": "run_id",
+              "value": "={{ $now.toFormat('yyyyMMdd-HHmmss') }}",
+              "type": "string"
+            },
+            {
+              "id": "3a41e462-c02c-4b96-8655-8c151e43c4fd",
+              "name": "processed_at",
+              "value": "={{ $now.toISO() }}",
+              "type": "string"
+            },
+            {
+              "id": "03d5a1d0-a080-4825-96dd-fb946cebe2d6",
+              "name": "retry_count",
+              "value": 0,
+              "type": "number"
+            },
+            {
+              "id": "239d6b7c-3a6d-4774-b813-2d15c0c37d26",
+              "name": "status",
+              "value": "pending",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        416,
+        0
+      ],
+      "id": "cbbde787-4d8d-4725-8304-3caa1caa46ea",
+      "name": "Set - Run ID + Helpers",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "d60e5659-bfc3-45af-b4ee-8078c040bfe6",
+              "leftValue": "={{ $json.full_name }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "db78d548-6e40-46d5-868a-de61676a8ccc",
+              "leftValue": "={{ $json.job_title }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        592,
+        16
+      ],
+      "id": "4801d637-3b23-4d91-b368-2f16987cb628",
+      "name": "IF - Valid Record?"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        832,
+        -96
+      ],
+      "id": "03d2958e-dbb6-47ff-a311-2beb2c7b5dd2",
+      "name": "Loop - One Record at a Time"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get this record's unique key (linkedin or name)\nconst item = $input.first().json;\nconst recordKey = (item.linkedin_profile || item.full_name || '')\n  .trim()\n  .replace(/[^a-zA-Z0-9]/g, '_')\n  .toLowerCase();\n\n// Get n8n's internal memory\nconst memory = $getWorkflowStaticData('global');\n\n// Check if we have seen this record before\nif (memory[recordKey]) {\n  // DUPLICATE FOUND\n  return {\n    json: {\n      ...item,\n      status: 'duplicate',\n      duplicate_detected: true,\n      record_key: recordKey,\n      error_message: 'Duplicate: record already processed in a previous run'\n    }\n  };\n} else {\n  // NEW RECORD - save to memory\n  memory[recordKey] = {\n    run_id: item.run_id,\n    processed_at: item.processed_at,\n    status: 'processing'\n  };\n\n  // NEW RECORD - pass forward\n  return {\n    json: {\n      ...item,\n      status: 'processing',\n      duplicate_detected: false,\n      record_key: recordKey\n    }\n  };\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1040,
+        96
+      ],
+      "id": "0c65e124-886e-4d3d-b9ed-3787ac06d59e",
+      "name": "Check - Duplicate Record?"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "4e413c5c-eed5-4727-8e1e-c59202fa02dd",
+              "leftValue": "={{ $json.duplicate_detected }}",
+              "rightValue": "=false\n",
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1216,
+        112
+      ],
+      "id": "5a9b9903-3940-4085-abd4-d5e1d5dec516",
+      "name": "IF - Is Duplicate?"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT\n  \"id\",\n  COALESCE(\n    NULLIF(TRIM(\"fullName\"),''), \n    NULLIF(TRIM(\"originalFullName\"),'')\n  ) AS full_name,\n  TRIM(\"jobTitle\") AS job_title,\n  \"profileUrlPrimaryLinkUrl\" AS linkedin_profile,\n  \"status\"\nFROM \"_peopleraw\"\nWHERE\n  \"status\" IN (\n    '1 - ExtractedWithUniqueID',\n    '3 - UniqueIDIdentified',\n    '6 - UniqueFound-CRM Pending',\n    '7 - CRMCompleted'\n  )\n  AND \"jobTitle\" ILIKE '%acumatica%'\n  AND \"jobTitle\" NOT ILIKE '%ex%'\n  AND \"jobTitle\" NOT ILIKE '%former%'\n  AND \"jobTitle\" NOT ILIKE '%previous%'\n  AND (\n    \"profileUrlPrimaryLinkUrl\" = '{{ $json.linkedin_profile }}'\n    OR TRIM(\"fullName\") ILIKE '{{ $json.full_name }}'\n  )\nORDER BY full_name NULLS LAST\nLIMIT 1;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1456,
+        128
+      ],
+      "id": "013112c1-7dfc-4a64-8239-cab0ba5e4c0f",
+      "name": "Postgres - Fetch Person Details",
+      "credentials": {
+        "postgres": {
+          "id": "Pz5LiQSqb8EQE2AD",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 1
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1664,
+        128
+      ],
+      "id": "a5252a71-3d83-4b43-92fa-3f022aacfc06",
+      "name": "Wait - Rate Control",
+      "webhookId": "d52bf458-6a2e-4f01-99d1-a14159702e14"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "e4f5ccb2-1716-4288-a647-40cfc945097f",
+              "name": "run_id",
+              "value": "={{ $('Set - Run ID + Helpers').item.json.run_id }}",
+              "type": "string"
+            },
+            {
+              "id": "a390eab1-1231-4d79-b658-64c072980fbc",
+              "name": "full_name",
+              "value": "={{ $json.full_name }}",
+              "type": "string"
+            },
+            {
+              "id": "a2bea64a-b0f7-465c-8c65-55babfdf36c0",
+              "name": "job_title",
+              "value": "={{ $json.job_title }}",
+              "type": "string"
+            },
+            {
+              "id": "844c9db5-4252-4380-89f8-0b0224f91e28",
+              "name": "linkedin_profile",
+              "value": "={{ $json.linkedin_profile }}",
+              "type": "string"
+            },
+            {
+              "id": "3ba1476d-1308-43cb-bfe6-c35babe3656d",
+              "name": "company",
+              "value": "={{ $('Set - Run ID + Helpers').item.json.company }}",
+              "type": "string"
+            },
+            {
+              "id": "413dfc01-44ac-4524-83b8-0138e0d319b2",
+              "name": "status",
+              "value": "={{ $json.status }}",
+              "type": "string"
+            },
+            {
+              "id": "52c96255-bcc8-46b8-81b8-7da2c52da630",
+              "name": "processed_at",
+              "value": "={{ $('Set - Run ID + Helpers').item.json.processed_at }}",
+              "type": "string"
+            },
+            {
+              "id": "1074bbc6-9f5f-4d2b-b9b5-5d73a904e4cd",
+              "name": "record_key",
+              "value": "={{ $('Check - Duplicate Record?').item.json.record_key }}",
+              "type": "string"
+            },
+            {
+              "id": "e09c61a6-9661-4014-bd7e-5f5e60940f5a",
+              "name": "retry_count",
+              "value": 0,
+              "type": "number"
+            },
+            {
+              "id": "f94e046f-8e70-46d9-b385-a5f001fb0289",
+              "name": "error_message",
+              "value": "",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1872,
+        128
+      ],
+      "id": "680cf4ee-cc41-43aa-95b4-c1778594d27e",
+      "name": "Set - Clean & Shape Data"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "8048d4f0-4c30-4702-9c39-3650dad584da",
+              "leftValue": "={{ $json.full_name }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "9645faa1-dd42-4888-b4d2-1f6e33a078bf",
+              "leftValue": "={{ $json.job_title }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "c6364e6b-bca6-4055-a6a4-6cb948ea9566",
+              "leftValue": "={{ $json.job_title.toLowerCase() }}",
+              "rightValue": "former",
+              "operator": {
+                "type": "string",
+                "operation": "notContains"
+              }
+            },
+            {
+              "id": "cabe72d7-fce4-4ca8-8af0-32da92f4b92b",
+              "leftValue": "={{ $json.job_title.toLowerCase() }}",
+              "rightValue": "ex-",
+              "operator": {
+                "type": "string",
+                "operation": "notContains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2080,
+        128
+      ],
+      "id": "40cf9a56-26d9-4a41-a06b-1f739e68b3db",
+      "name": "IF - Quality Check"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1hTDMsR3Gs0N5lsApRGyBYM9xBRY5yr-b1Ju2Hu1oJdw",
+          "mode": "list",
+          "cachedResultName": "USA1005 - Acumatica People Sync Agent",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1hTDMsR3Gs0N5lsApRGyBYM9xBRY5yr-b1Ju2Hu1oJdw/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 973795902,
+          "mode": "list",
+          "cachedResultName": "Output",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1hTDMsR3Gs0N5lsApRGyBYM9xBRY5yr-b1Ju2Hu1oJdw/edit#gid=973795902"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "run_id": "={{ $json.run_id }}",
+            "full_name": "={{ $json.full_name }}",
+            "job_title": "={{ $json.job_title }}",
+            "linkedin_profile": "={{ $json.linkedin_profile }}",
+            "company": "={{ $json.company }}",
+            "status": "={{ $json.status }}",
+            "processed_at": "={{ $json.processed_at }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "run_id",
+              "displayName": "run_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "full_name",
+              "displayName": "full_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "job_title",
+              "displayName": "job_title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "linkedin_profile",
+              "displayName": "linkedin_profile",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "company",
+              "displayName": "company",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "processed_at",
+              "displayName": "processed_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        2288,
+        32
+      ],
+      "id": "4a605584-2588-402f-bea8-1af014d64a8f",
+      "name": "Google Sheets - Save Output",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "p29c8vZBT44DvNDB",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first().json;\nconst memory = $getWorkflowStaticData('global');\n\n// Update memory to mark as success\nmemory[item.record_key] = {\n  run_id: item.run_id,\n  processed_at: item.processed_at,\n  status: 'success'\n};\n\nreturn {\n  json: {\n    ...item,\n    status: 'success',\n    log_message: `✅ SUCCESS: ${item.full_name} saved to sheet`\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2464,
+        48
+      ],
+      "id": "e3074219-1ab0-4858-8afd-24d45b862296",
+      "name": "Log - Success"
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first().json;\n\nreturn {\n  json: {\n    ...item,\n    status: 'duplicate',\n    log_message: ` DUPLICATE: ${item.full_name} already processed - skipping`\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1424,
+        -32
+      ],
+      "id": "25e49d0d-19d9-4df8-a9a8-44a3c09b0cf1",
+      "name": "Log - Duplicate"
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first().json;\nconst memory = $getWorkflowStaticData('global');\n\n// Update memory to mark as skipped\nif (item.record_key) {\n  memory[item.record_key] = {\n    run_id: item.run_id,\n    processed_at: item.processed_at,\n    status: 'skipped'\n  };\n}\n\nreturn {\n  json: {\n    ...item,\n    status: 'skipped',\n    log_message: `⏭️ SKIPPED: ${item.full_name} failed quality check`\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2288,
+        224
+      ],
+      "id": "544825de-663f-4ccd-817f-01562800765e",
+      "name": "Log - Skipped"
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first().json;\n\nreturn {\n  json: {\n    ...item,\n    status: 'invalid',\n    log_message: ` INVALID: Record missing required fields - full_name or job_title is empty`\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        800,
+        112
+      ],
+      "id": "3580c75b-3afc-4fde-8bdb-a27108014cd4",
+      "name": "Log - Invalid Input"
+    },
+    {
+      "parameters": {
+        "jsCode": "const memory = $getWorkflowStaticData('global');\n\n// Count all statuses\nconst allRecords = Object.values(memory);\nconst success = allRecords.filter(r => r.status === 'success').length;\nconst duplicates = allRecords.filter(r => r.status === 'duplicate').length;\nconst skipped = allRecords.filter(r => r.status === 'skipped').length;\n\nreturn {\n  json: {\n    log_message: ` WORKFLOW COMPLETE`,\n    total_processed: allRecords.length,\n    success_count: success,\n    duplicate_count: duplicates,\n    skipped_count: skipped,\n    completed_at: new Date().toISOString()\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1040,
+        -160
+      ],
+      "id": "5b848cf4-b097-4967-91cf-a6632fd55da3",
+      "name": "All done"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "Set - Run ID + Helpers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Run ID + Helpers": {
+      "main": [
+        [
+          {
+            "node": "IF - Valid Record?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Valid Record?": {
+      "main": [
+        [
+          {
+            "node": "Loop - One Record at a Time",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log - Invalid Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop - One Record at a Time": {
+      "main": [
+        [
+          {
+            "node": "All done",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Check - Duplicate Record?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check - Duplicate Record?": {
+      "main": [
+        [
+          {
+            "node": "IF - Is Duplicate?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Is Duplicate?": {
+      "main": [
+        [
+          {
+            "node": "Log - Duplicate",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Postgres - Fetch Person Details",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Wait - Rate Control",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres - Fetch Person Details": {
+      "main": [
+        [
+          {
+            "node": "Wait - Rate Control",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait - Rate Control": {
+      "main": [
+        [
+          {
+            "node": "Set - Clean & Shape Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Clean & Shape Data": {
+      "main": [
+        [
+          {
+            "node": "IF - Quality Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Quality Check": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets - Save Output",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log - Skipped",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets - Save Output": {
+      "main": [
+        [
+          {
+            "node": "Log - Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log - Success": {
+      "main": [
+        [
+          {
+            "node": "Loop - One Record at a Time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log - Duplicate": {
+      "main": [
+        [
+          {
+            "node": "Loop - One Record at a Time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log - Skipped": {
+      "main": [
+        [
+          {
+            "node": "Loop - One Record at a Time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "bc6cb65a-9708-407e-b157-64dc177d17a0",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "dfa9bd419da97e8a72d6069acb67e95575c89baa71302d0781a7331301986176"
+  },
+  "id": "aqtErTE0w0TSGgYL",
+  "tags": []
+}
