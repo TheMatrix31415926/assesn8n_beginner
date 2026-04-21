@@ -1,0 +1,661 @@
+{
+  "name": "USA2001 To DeDuplicate",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "03fd864b-b6b8-4838-a34b-005825da149a",
+      "name": "Start"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "51387c8e-fe6c-48b0-892a-98e05fd486e7",
+              "name": "run_id",
+              "value": "={{\"RUN_\" + $now.toISO()}}",
+              "type": "string"
+            },
+            {
+              "id": "67106718-3a39-4d8c-997d-0265845b2f91",
+              "name": "processed_at",
+              "value": "={{$now.toISO()}}",
+              "type": "string"
+            },
+            {
+              "id": "33955fa9-cff8-4be2-939e-0e3cf52913fc",
+              "name": "",
+              "value": "",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        208,
+        0
+      ],
+      "id": "d67c7df1-1f0b-47dd-95b9-e6c9c1595762",
+      "name": "Set Run ID"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT COUNT(*) as run_count \nFROM workflow_run_log \nWHERE run_id = '{{$json.run_id}}';",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        416,
+        0
+      ],
+      "id": "093ba2f6-efe2-454f-9af9-a99f2a3255a3",
+      "name": "Check Duplicate Run",
+      "credentials": {
+        "postgres": {
+          "id": "Pz5LiQSqb8EQE2AD",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "0d0db190-0aee-4162-8e71-8b02e666864d",
+              "leftValue": "={{$json.run_count}}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        624,
+        0
+      ],
+      "id": "7dbe07ec-edb2-4425-a63d-6cff1ee3905f",
+      "name": "Duplicate Run?"
+    },
+    {
+      "parameters": {
+        "errorMessage": "duplicate_run"
+      },
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [
+        832,
+        -96
+      ],
+      "id": "d2c88e25-aeae-4d19-8520-7d46848ada5f",
+      "name": "Stop and Error"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT \n    \"id\",\n    \"fullName\",\n    \"profileUrlPrimaryLinkUrl\",\n    \"normalizedLinkedinUrlPrimaryLinkUrl\",\n    \"status\",\n    \"updatedAt\"\nFROM public.\"_peopleraw\"\nWHERE \"status\" IS NULL \nOR TRIM(\"status\") = ''\nLIMIT 500;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        832,
+        96
+      ],
+      "id": "bc963c8f-891d-483f-b6d9-5a0f01d23d7c",
+      "name": "Fetch Raw Records",
+      "credentials": {
+        "postgres": {
+          "id": "Pz5LiQSqb8EQE2AD",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "f321d4d6-fb6d-415c-9197-e15f5bfb93b4",
+              "leftValue": "={{$items().length}}",
+              "rightValue": "0",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1040,
+        96
+      ],
+      "id": "a41bbd79-07f9-4893-a630-1adf815bb4e0",
+      "name": "Any Records?"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "9240fb84-188b-4fc3-ae65-5c7ad4852092",
+              "name": "status",
+              "value": "empty_run",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1248,
+        0
+      ],
+      "id": "dc87d7d3-efb9-4cac-93a0-8f9531f51c2b",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1216,
+        128
+      ],
+      "id": "78050a40-9235-470d-87a7-be0405e7b4b4",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "edb751f3-89eb-4992-8bf0-e5ca5dc2a7c8",
+              "name": "record_key",
+              "value": "={{$json.id.toString().trim()}}",
+              "type": "string"
+            },
+            {
+              "id": "778e86b0-7db1-4a83-8e4a-2cb9cde28318",
+              "name": "normalizedLinkedinUrlPrimaryLinkUrl",
+              "value": "={{ $json.normalizedLinkedinUrlPrimaryLinkUrl }}",
+              "type": "string"
+            },
+            {
+              "id": "b8eb7d41-05d8-4844-b2db-b47c52bdedc8",
+              "name": "raw_url",
+              "value": "={{$json.profileUrlPrimaryLinkUrl}}",
+              "type": "string"
+            },
+            {
+              "id": "38d01f62-d072-4e57-8536-54b7dacd561d",
+              "name": "run_id",
+              "value": "={{ $json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "c300ebc2-4b71-4130-a97e-b9fd7ac3a9ba",
+              "name": "status",
+              "value": "=[null]",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1424,
+        336
+      ],
+      "id": "716d3b4f-bcdc-4453-aaea-c16fa2cad862",
+      "name": "Shape Record"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "451e9552-86fb-4f22-9a95-12d4d6cb36b4",
+              "leftValue": "={{$json.record_key}}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1632,
+        336
+      ],
+      "id": "f7504489-6000-40c5-ac8e-388c7d515dd7",
+      "name": "Valid Record ID?"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT COUNT(*) as already_processed\nFROM public.workflow_run_log\nWHERE record_key = '{{$json.record_key}}'\nAND status = 'success';",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1872,
+        272
+      ],
+      "id": "10d6ff62-c82d-4ecf-af83-e03de8b37859",
+      "name": "Check Duplicate Record",
+      "alwaysOutputData": true,
+      "credentials": {
+        "postgres": {
+          "id": "Pz5LiQSqb8EQE2AD",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "fc8c10f4-951c-4f32-901a-1499d678e73f",
+              "leftValue": "={{ $('Shape Record').item.json.normalizedLinkedinUrlPrimaryLinkUrl }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2048,
+        336
+      ],
+      "id": "c0c7216f-154b-4539-9dea-d29bc003f44b",
+      "name": "Has LinkedIn URL?"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE public.\"_peopleraw\"\nSET \n    \"status\" = '1 - ExtractedWithUniqueID',\n    \"updatedAt\" = NOW()\nWHERE \"id\"::text LIKE '%' || TRIM('{{ $('Valid Record ID?').item.json.record_key }}') || '%';",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        2336,
+        304
+      ],
+      "id": "ad0fe422-e415-42ec-93eb-30b071c8e1c3",
+      "name": "Execute a SQL query",
+      "credentials": {
+        "postgres": {
+          "id": "Pz5LiQSqb8EQE2AD",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE public.\"_peopleraw\"\nSET \n    \"status\" = '2 - ExtractedWithOutUniqueID',\n    \"updatedAt\" = NOW()\nWHERE \"id\"::text LIKE '%' || TRIM('{{ $('Valid Record ID?').item.json.record_key }}') || '%';",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        2288,
+        640
+      ],
+      "id": "cd8a9a7c-7f41-4473-bd4b-6677460fbaa5",
+      "name": "Execute a SQL query1",
+      "credentials": {
+        "postgres": {
+          "id": "Pz5LiQSqb8EQE2AD",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO public.workflow_run_log \n    (run_id, record_key, status, processed_at)\nVALUES \n    (\n    '{{$json.run_id}}', \n    '{{$json.record_key}}', \n    'success', \n    NOW()\n    );",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        2528,
+        320
+      ],
+      "id": "b955b159-972f-4731-ba9b-184f42de59f1",
+      "name": "log_success",
+      "credentials": {
+        "postgres": {
+          "id": "Pz5LiQSqb8EQE2AD",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 2
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        2736,
+        320
+      ],
+      "id": "aae1b9bb-f042-464f-a49a-142a6f92c16d",
+      "name": "Pace Control",
+      "webhookId": "0f8aaae8-752c-4555-bb5a-6ea1687b3021"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT \n    \"status\", \n    COUNT(*) AS total_records\nFROM public.\"_peopleraw\"\nGROUP BY \"status\"\nORDER BY \"status\";",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        2944,
+        320
+      ],
+      "id": "b0e2adba-61bb-4552-98e5-a490dd6cba8c",
+      "name": "Final Count Verification",
+      "credentials": {
+        "postgres": {
+          "id": "Pz5LiQSqb8EQE2AD",
+          "name": "Postgres account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Start": {
+      "main": [
+        [
+          {
+            "node": "Set Run ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Run ID": {
+      "main": [
+        [
+          {
+            "node": "Check Duplicate Run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Duplicate Run": {
+      "main": [
+        [
+          {
+            "node": "Duplicate Run?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Duplicate Run?": {
+      "main": [
+        [
+          {
+            "node": "Stop and Error",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Fetch Raw Records",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Raw Records": {
+      "main": [
+        [
+          {
+            "node": "Any Records?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Any Records?": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Shape Record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Shape Record": {
+      "main": [
+        [
+          {
+            "node": "Valid Record ID?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Valid Record ID?": {
+      "main": [
+        [
+          {
+            "node": "Check Duplicate Record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Duplicate Record": {
+      "main": [
+        [
+          {
+            "node": "Has LinkedIn URL?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has LinkedIn URL?": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Execute a SQL query1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query": {
+      "main": [
+        [
+          {
+            "node": "log_success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "log_success": {
+      "main": [
+        [
+          {
+            "node": "Pace Control",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pace Control": {
+      "main": [
+        [
+          {
+            "node": "Final Count Verification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Final Count Verification": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query1": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "50f44263-e949-4d3f-813d-657f58acf3f0",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "dfa9bd419da97e8a72d6069acb67e95575c89baa71302d0781a7331301986176"
+  },
+  "id": "O6JQHd9In9WzZGew",
+  "tags": []
+}
